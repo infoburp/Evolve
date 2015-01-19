@@ -20,13 +20,15 @@ SOURCES += main.cpp\
     settings.cpp \
     widgetGui.cpp \
     mutation.cpp \
-    optimize.cpp
+    optimize.cpp \
+    analysis.cpp
 
 HEADERS  += widget.h \
     poly.h \
     progressdialog.h \
     settingswidget.h \
-    settings.h
+    settings.h \
+    analysis.h
 
 FORMS    += widget.ui \
     progressdialog.ui \
@@ -34,5 +36,6 @@ FORMS    += widget.ui \
 
 CONFIG += c++11
 
-QMAKE_CXXFLAGS_RELEASE += -O3 -flto -march=native # Crashes on some computers
-QMAKE_CXXFLAGS_DEBUG += -Og
+QMAKE_CXXFLAGS_RELEASE += -O3 -flto -march=native -mmmx # Crashes on some computers
+QMAKE_CXXFLAGS_DEBUG += -Og -g -march=native -mmmx # Crashes on some computers
+#QMAKE_CXXFLAGS_DEBUG += -Og

@@ -17,11 +17,11 @@ public:
     bool operator==(const Poly& other);
     static void drawPoly(QImage& target, Poly& poly);
     static void drawPoly(QImage& target, Poly& poly, QPainter& painter);
+    bool hasPointIn(QRect rect);
 
 public:
     QVector<QPoint> points;
     QColor color;
-    int resizeTimes=0;
 };
 
 QDataStream& operator<< (QDataStream& stream, const Poly& poly);

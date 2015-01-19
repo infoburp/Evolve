@@ -23,6 +23,38 @@ void Widget::closeEvent(QCloseEvent *event)
     exit(0);
 }
 
+void Widget::autofocusClicked()
+{
+    QRect focus = computeAutofocusFitness(generated);
+
+    // Draw the focus rect
+    QPixmap newpic = QPixmap::fromImage(pic);
+    QPainter paint;
+    paint.begin(&newpic);
+    QPen pen(Qt::SolidLine);
+    pen.setWidth(3*max((float)width/ui->imgBest->width(), (float)height/ui->imgBest->height()));
+    pen.setColor(QColor(200,0,0,150));
+    paint.setPen(pen);
+    paint.drawRect(focus);
+    paint.end();
+    ui->imgOriginal->clear();
+    ui->imgOriginal->setPixmap(newpic);
+
+    // Set the focus coords
+    FOCUS_LEFT = min(focus.x(),focus.right())*100/newpic.width();
+    FOCUS_RIGHT = max(focus.x(),focus.right())*100/newpic.width();
+    FOCUS_TOP = min(focus.y(),focus.bottom())*100/newpic.height();
+    FOCUS_BOTTOM = max(focus.y(),focus.bottom())*100/newpic.height();
+    if (FOCUS_LEFT == 100)
+        FOCUS_LEFT = 99;
+    if (FOCUS_TOP == 100)
+        FOCUS_TOP = 99;
+    if (FOCUS_RIGHT <= FOCUS_LEFT)
+        FOCUS_RIGHT = FOCUS_LEFT+1;
+    if (FOCUS_BOTTOM <= FOCUS_TOP)
+        FOCUS_BOTTOM = FOCUS_TOP+1;
+}
+
 void Widget::openImageClicked()
 {
     QString filename = QFileDialog::getOpenFileName(this,"Open Image","", "Images (*.png *.gif *.jpg *.jpeg *.bmp)");
@@ -41,7 +73,7 @@ void Widget::openImageClicked()
     height = pic.height();
 
     // Create a blank pic the size of the original
-    generated = QImage(width, height, QImage::Format_ARGB32);
+    generated = QImage(width, height, QImage::Format_RGB32);
     generated.fill(QColor(255,255,255));
     ui->imgBest->setPixmap(QPixmap::fromImage(generated));
 
@@ -65,7 +97,21 @@ void Widget::saveImageClicked()
                                                     "Images (*.png *.jpg)");
     if (fileName.isEmpty())
         return;
-    generated.save(fileName);
+
+    QImage image(width, height, QImage::Format_RGB32);
+    QBrush brush(Qt::SolidPattern);
+    image.fill(Qt::white);
+    QPainter painter(&image);
+    painter.setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform);
+    painter.setPen(QPen(Qt::NoPen));
+    for (Poly& poly : polys)
+    {
+        brush.setColor(poly.color);
+        painter.setBrush(brush);
+        painter.drawPolygon(poly.points.data(), poly.points.size());
+    }
+
+    image.save(fileName);
 }
 
 void Widget::importDnaClicked()
@@ -100,6 +146,12 @@ void Widget::importDnaClicked()
     ui->imgBest->setPixmap(QPixmap::fromImage(generated));
 }
 
+void Widget::redrawClicked()
+{
+    redraw(generated);
+    ui->imgBest->setPixmap(QPixmap::fromImage(generated));
+}
+
 void Widget::exportDnaClicked()
 {
     QString fileName = QFileDialog::getSaveFileName(this, tr("Export DNA"),"",
@@ -107,7 +159,7 @@ void Widget::exportDnaClicked()
     if (fileName.isEmpty())
         return;
     QFile file(fileName);
-    file.open(QIODevice::WriteOnly);
+    file.open(QIODevice::WriteOnly | QIODevice::Truncate);
     QDataStream out(&file);
     out.setVersion(QDataStream::Qt_4_0);
     out << generation;
@@ -115,6 +167,8 @@ void Widget::exportDnaClicked()
     out << height;
     out << polys;
     file.close();
+
+    redraw(generated);
 }
 
 void Widget::saveSVGClicked()
@@ -155,7 +209,7 @@ void Widget::settingsClicked()
 
 void Widget::updateGuiFitness()
 {
-    quint64 worstFitness = width*height*3*255;
+    quint64 worstFitness = (quint64)width*height*3*255;
     float percentFitness = 100.0-((double)fitness/(double)worstFitness*100.0);
     ui->fitnessLabel->setNum(percentFitness);
     ui->fitnessLabel->setText(ui->fitnessLabel->text()+'%');
@@ -353,7 +407,6 @@ bool Widget::eventFilter(QObject *object, QEvent *event)
     {
         // Draw the focus rect
         QPixmap newpic = QPixmap::fromImage(pic);
-        //newpic = newpic.scaled(ui->imgOriginal->size());
         QMouseEvent *mouseEvent = static_cast<QMouseEvent *>(event);
         QPoint endCoords = mouseEvent->pos();
         endCoords.setX(max(min(endCoords.x(), ui->imgOriginal->width()),0));
@@ -372,6 +425,7 @@ bool Widget::eventFilter(QObject *object, QEvent *event)
         paint.setPen(pen);
         paint.drawRect(QRect(scaledStart, scaledEnd));
         paint.end();
+        ui->imgOriginal->clear();
         ui->imgOriginal->setPixmap(newpic);
 
         // Set the focus coords

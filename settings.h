@@ -1,6 +1,9 @@
 #ifndef SETTINGS_H
 #define SETTINGS_H
 
+extern bool AUTOFOCUS_ENABLED;
+extern int AUTOFOCUS_SUBDIVS, AUTOFOCUS_DELAY;
+
 extern int N_POLY_POINTS;
 extern int N_COLOR_VAR;
 extern int N_POS_VAR;
@@ -15,7 +18,9 @@ extern int N_CORES;
 
 extern int POLYS_MIN, POLYS_MAX;
 
+extern int POINT_MOVE_RATE, POINT_ADD_RATE, POINT_DELETE_RATE;
 extern int POLYS_ADD_RATE, POLYS_REMOVE_RATE, POLYS_REORDER_RATE;
+extern int COLOR_OPT_RATE, SHAPE_OPT_RATE;
 
 #define GEN_WITH_RANDOM_COLOR false
 #define OPT_INCREASE_ALPHA true
